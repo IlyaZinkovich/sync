@@ -1,0 +1,42 @@
+name: Sync Repository
+
+on:
+  push:
+    branches:
+      - '**'
+  create:
+    branches:
+      - '**'
+    tags:
+      - '**'
+  issues:
+    types: [opened, edited, closed]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the source repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up the remote with the GitHub token
+        run: git remote add target https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/ilyazinkovich/sync-target.git
+
+      - name: Sync commits, branches, and tags
+        run: git push --mirror target
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Run sync script for Issues and Pull Requests
+        run: python scripts/sync.py
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
